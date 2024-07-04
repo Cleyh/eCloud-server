@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jidays.ecloud.file.fileMapper.DownloadTaskMapper">
+
+    <insert id="addDownloadTask">
+        INSERT INTO download_task
+        (file_save_name,
+         status,
+         user_id,
+         task_uuid,
+         url,
+         file_parent_id,
+         total_bytes,
+         created_time, updated_time, file_true_name)
+        VALUES (#{task.file_save_name},
+                #{task.status},
+                #{task.user_id},
+                #{task.task_uuid},
+                #{task.url},
+                #{task.file_parent_id},
+                #{task.total_bytes},
+                #{task.create_time},
+                #{task.update_time},
+                #{task.file_true_name})
+    </insert>
+    <update id="updateTask">
+        UPDATE download_task
+        SET status = #{task.status},
+            downloaded_bytes = #{task.downloaded_bytes},
+            total_bytes = #{task.total_bytes},
+            file_true_name = #{task.file_true_name}
+        WHERE
+            task_uuid = #{task.task_uuid}
+    </update>
+    <delete id="deleteTask">
+        DELETE
+        FROM download_task
+        WHERE task_uuid = #{task.task_uuid}
+    </delete>
+    <select id="getTaskByUUID" resultType="com.jidays.ecloud.Entity.DownloadTask">
+        SELECT *
+        FROM download_task
+        WHERE task_uuid = #{taskID}
+    </select>
+    <select id="getTaskList" resultType="com.jidays.ecloud.Entity.DownloadTask">
+        SELECT *
+        FROM download_task
+        WHERE user_id = #{userID}
+    </select>
+    <select id="getAllTaskList" resultType="com.jidays.ecloud.Entity.DownloadTask">
+        SELECT t.*, u.user_name
+        FROM download_task as t,
+             users as u
+        WHERE t.user_id = u.user_id
+    </select>
+</mapper>

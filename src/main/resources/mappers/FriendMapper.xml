@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jidays.ecloud.friend.FriendMapper">
+    <insert id="addFriend">
+        INSERT INTO friends (user_id, friend_id, status)
+        VALUES (#{userID}, #{friendID}, 'waiting')
+    </insert>
+
+    <insert id="addAcceptedFriend">
+        INSERT INTO friends (user_id, friend_id, status)
+        VALUES (#{userID}, #{friendID}, 'accepted')
+    </insert>
+
+    <update id="acceptFriend">
+        UPDATE friends
+        SET status = 'accepted'
+        WHERE user_id = #{requestSenderID}
+          AND friend_id = #{userID};
+    </update>
+    <delete id="deletedFriend">
+        DELETE
+        FROM friends
+        WHERE (user_id = #{userID} AND friend_id = #{friendID})
+           OR (user_id = #{friendID} AND friend_id = #{userID})
+    </delete>
+
+    <select id="getFriendList" resultType="com.jidays.ecloud.Entity.User">
+        SELECT u.user_id, u.user_name, u.email, u.avatar, f.status
+        FROM friends as f,
+             users as u
+        WHERE f.user_id = #{userID}
+          AND f.friend_id = u.user_id
+          AND f.status = 'accepted'
+    </select>
+
+    <select id="getFriendByID" resultType="com.jidays.ecloud.Entity.Friend">
+        SELECT f.*
+        FROM friends as f
+        WHERE (f.user_id = #{userID} AND f.friend_id = #{friendID})
+           OR (f.friend_id = #{userID} AND f.user_id = #{friendID})
+    </select>
+    <select id="getAcceptList" resultType="com.jidays.ecloud.Entity.User">
+        SELECT u.user_id, u.user_name, u.email, u.avatar, f.status
+        FROM friends as f,
+             users as u
+        WHERE f.friend_id = #{userID}
+          AND f.user_id = u.user_id
+          AND f.status = 'waiting'
+    </select>
+</mapper>

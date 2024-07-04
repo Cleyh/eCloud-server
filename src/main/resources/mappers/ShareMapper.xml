@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jidays.ecloud.file.fileMapper.ShareMapper">
+
+    <insert id="createShare">
+        INSERT INTO shares (file_id, password, expire_time, disposable)
+        VALUES (#{fileID}, #{password}, #{expireTime}, #{disposable})
+    </insert>
+    <insert id="createMultipleShare">
+        INSERT INTO shares (file_id, password, expire_time, disposable,user_id)
+        VALUES
+        <foreach collection="userIDs" item="userID" separator=",">
+            (#{fileId}, #{password}, #{expireTime}, #{isDisposable}, #{userID})
+        </foreach>
+    </insert>
+    <update id="deleteShare">
+        UPDATE shares
+        SET deleted = true
+        WHERE share_id = #{shareID}
+    </update>
+    <update id="updateDownloadToken">
+        UPDATE shares
+        SET share_uuid = #{token}
+        WHERE share_id = #{shareID}
+    </update>
+    <select id="getShare" resultType="com.jidays.ecloud.Entity.Share">
+        SELECT *
+        FROM shares
+        WHERE share_id = #{shareID}
+    </select>
+    <select id="getSharedFiles" resultType="com.jidays.ecloud.Entity.Share">
+        SELECT s.*, f.file_name
+        FROM files as f,
+             shares as s
+        WHERE f.user_id = #{userID}
+          AND s.file_id = f.file_id
+          AND s.deleted = false
+    </select>
+    <select id="getMySharedFiles" resultType="com.jidays.ecloud.Entity.Share">
+        SELECT f.file_name, s.*
+        FROM files as f,
+             shares as s
+        WHERE s.user_id = #{userID}
+          AND f.file_id = s.file_id
+          AND s.deleted = false
+    </select>
+    <select id="getDownloadToken" resultType="java.lang.String">
+        SELECT s.share_uuid
+        FROM shares as s
+        WHERE s.share_id = #{shareID}
+          AND s.deleted = false
+    </select>
+
+</mapper>

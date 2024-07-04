@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jidays.ecloud.file.fileMapper.EFileMapper">
+
+    <!-- 获取目录内容 -->
+    <select id="getFilesInFolder" resultType="com.jidays.ecloud.Entity.EFile">
+        SELECT *
+        FROM files
+        WHERE parent_id = #{fileID}
+          AND is_delete = false
+    </select>
+
+    <!-- 添加文件 -->
+    <insert id="addFile">
+        INSERT INTO files (file_name, file_true_name, parent_id, file_type, user_id)
+        VALUES (#{fileName}, #{fileTrueName}, #{parentId}, 'file', #{userID})
+    </insert>
+
+    <!-- 添加文件夹 -->
+    <insert id="addFolder">
+        INSERT INTO files (file_name, parent_id, file_type, user_id)
+        VALUES (#{fileName}, #{parentId}, 'folder', #{userID})
+    </insert>
+
+    <!-- 检查文件是否存在 -->
+    <select id="checkExistence" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM files
+        WHERE file_name = #{fileName}
+          AND parent_id = #{parentID}
+          AND user_id = #{userID}
+          AND is_delete = false
+    </select>
+
+    <select id="getFilesByNameID" resultType="com.jidays.ecloud.Entity.EFile">
+        SELECT *
+        FROM files
+        WHERE file_name = #{fileName}
+          AND parent_id = #{parentID}
+          AND user_id = #{userID}
+          AND is_delete = false
+    </select>
+
+    <select id="checkExistenceByID" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM files
+        WHERE file_id = #{fileID}
+          AND is_delete = false
+    </select>
+
+    <select id="getUserFolder" resultType="com.jidays.ecloud.Entity.EFile">
+        SELECT *
+        FROM files
+        WHERE user_id = #{userID}
+          AND file_type = 'folder'
+          AND file_name = (SELECT user_name FROM users WHERE user_id = #{userID})
+          AND is_delete = false
+    </select>
+
+    <select id="getFileById" resultType="com.jidays.ecloud.Entity.EFile">
+        SELECT *
+        FROM files
+        WHERE file_id = #{fileID}
+          AND is_delete = false
+    </select>
+
+    <select id="getAllSubfiles" resultType="com.jidays.ecloud.Entity.EFile">
+        WITH RECURSIVE subfolders AS (
+            SELECT *
+            FROM files
+            WHERE file_id = #{fileID}
+              AND is_delete = false
+            UNION ALL
+            SELECT f.*
+            FROM files f
+                     INNER JOIN subfolders sf ON f.parent_id = sf.file_id
+            WHERE f.is_delete = false
+        )
+        SELECT * FROM subfolders
+    </select>
+    <select id="getUniqueName" resultType="java.lang.String">
+        CALL GetUniqueFileName(#{fileName}, #{parentId}, @uniqueFileName);
+        SELECT @uniqueFileName;
+    </select>
+    <select id="getFileChainById" resultType="com.jidays.ecloud.Entity.EFile">
+        WITH RECURSIVE cte AS (SELECT file_id, parent_id, file_name
+                               FROM files
+                               WHERE file_id = #{fileID}
+                               UNION ALL
+                               SELECT f.file_id, f.parent_id, f.file_name
+                               FROM files f
+                                        INNER JOIN cte ON f.file_id = cte.parent_id)
+        SELECT *
+        FROM cte
+        ORDER BY parent_id DESC;
+    </select>
+
+    <!-- 重命名文件 -->
+    <update id="rename">
+        UPDATE files
+        SET file_name = #{newName},
+            file_true_name = CASE
+                                 WHEN file_type = 'file' THEN #{newTrueName}
+                                 ELSE file_true_name
+                END
+        WHERE file_id = #{fileID};
+    </update>
+
+    <!-- 删除文件和文件夹 -->
+    <delete id="deleteFolderById">
+        WITH RECURSIVE subfolders AS (
+            SELECT file_id
+            FROM files
+            WHERE file_id = #{fileID}
+              AND is_delete = false
+            UNION ALL
+            SELECT f.file_id
+            FROM files f
+                     INNER JOIN subfolders sf ON f.parent_id = sf.file_id
+            WHERE f.is_delete = false
+        )
+        DELETE
+        FROM files
+        WHERE file_id IN (SELECT file_id FROM subfolders)
+    </delete>
+
+    <delete id="deleteFilesByIds">
+        DELETE
+        FROM files
+        WHERE file_id IN
+        <foreach collection="idList" item="id" separator="," open="(" close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <delete id="deleteFileById">
+        DELETE
+        FROM files
+        WHERE file_id = #{fileID}
+          AND file_type = 'file'
+          AND is_delete = false
+    </delete>
+</mapper>
